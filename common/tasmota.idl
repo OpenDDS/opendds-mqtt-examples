@@ -1,0 +1,14 @@
+module tasmota {
+  @topic
+  struct Config {
+    @key string t;
+    string dn;
+    string ft;
+  };
+
+  @topic
+  struct Power {
+    @key string device;
+    boolean on;
+  };
+};

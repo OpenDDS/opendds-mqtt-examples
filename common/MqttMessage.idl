@@ -1,0 +1,5 @@
+@topic
+struct MqttMessage {
+  @key string topic;
+  string message;
+};
