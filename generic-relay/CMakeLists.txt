@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(opendds-mqtt-examples-generic-approach CXX)
+project(opendds-mqtt-examples-generic-relay CXX)
 
 find_package(PahoMqttCpp REQUIRED)
 find_package(OpenDDS REQUIRED)
