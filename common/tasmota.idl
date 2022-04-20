@@ -18,4 +18,13 @@ module tasmota {
     string display_name;
     boolean on;
   };
+
+  const string wattage_topic_name = "Wattage";
+
+  @topic
+  struct Wattage {
+    @key string device_name;
+    string display_name;
+    int32 watts;
+  };
 };

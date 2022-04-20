@@ -163,4 +163,19 @@ std::string toggle_tasmota_power(const tasmota::Power& power)
   return *(power.on() ? off_values : on_values).begin();
 }
 
+tasmota::Wattage get_tasmota_wattage(const tasmota::Config& config, const std::string& json)
+{
+  tasmota::Wattage wattage;
+  wattage.device_name() = config.t();
+  wattage.display_name() = config.fn();
+  rapidjson::Document document;
+  document.Parse(json.c_str());
+  wattage.watts() = get_int32_from_object(
+    get_object_from_object(
+      get_object_from_object(document, "StatusSNS"),
+      "ENERGY"),
+    "Power");
+  return wattage;
+}
+
 #endif // OPENDDS_MQTT_EXAMPLES_COMMON_TASMOTA_H

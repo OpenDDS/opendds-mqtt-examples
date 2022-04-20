@@ -4,3 +4,4 @@ project(opendds-mqtt-examples CXX)
 
 add_subdirectory(common)
 add_subdirectory(generic-relay)
+add_subdirectory(idl-relay)
