@@ -1,14 +1,21 @@
 module tasmota {
-  @topic
   struct Config {
-    @key string t;
+    // MQTT topic base
+    string t;
+    // Tasmota name
     string dn;
+    // Tasmota human-friendly name
+    string fn;
+    // MQTT topic template
     string ft;
   };
 
+  const string power_topic_name = "Power";
+
   @topic
   struct Power {
-    @key string device;
+    @key string device_name;
+    string display_name;
     boolean on;
   };
 };

@@ -61,13 +61,12 @@ int main(int argc, char* argv[])
     mqtt_client.subscribe("#", 2);
 
     // Setup OpenDDS
-    auto typesupport = opendds_wrapper.register_typesupport<MqttMessage>();
-    auto type_name = typesupport->get_type_name();
-    auto to_mqtt_topic = opendds_wrapper.create_topic("To MQTT", type_name);
-    auto from_mqtt_topic = opendds_wrapper.create_topic("From MQTT", type_name);
-    auto writer = opendds_wrapper.create_datawriter<MqttMessage>(from_mqtt_topic);
+    auto mqtt_message_ts = opendds_wrapper.register_typesupport<MqttMessage>();
+    auto to_mqtt_topic = mqtt_message_ts.create_topic(to_mqtt_topic_name);
+    auto from_mqtt_topic = mqtt_message_ts.create_topic(from_mqtt_topic_name);
+    auto writer = from_mqtt_topic.create_datawriter();
     DDS::DataReaderListener_var listener(new ToMqttDataReaderListener(mqtt_client));
-    auto reader = opendds_wrapper.create_datareader<MqttMessage>(to_mqtt_topic, listener);
+    auto reader = to_mqtt_topic.create_datareader(listener);
 
     while (true) {
       auto msg = mqtt_client.consume_message();

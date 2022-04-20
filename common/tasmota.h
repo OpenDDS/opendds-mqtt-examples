@@ -9,6 +9,7 @@
 #include <string>
 #include <stdexcept>
 #include <cctype>
+#include <cstdint>
 
 bool starts_with(const std::string& what, const std::string& prefix)
 {
@@ -58,12 +59,56 @@ std::string replace(
   return output;
 }
 
+rapidjson::Value& get_value_from_object(rapidjson::Value& object, const char* name)
+{
+  if (!object.HasMember(name)) {
+    throw std::runtime_error(std::string("Couldn't get member ") + name);
+  }
+  return object[name];
+}
+
+rapidjson::Value& get_value_from_array(rapidjson::Value& object, unsigned index)
+{
+  if (!object.IsArray() || object.Size() < (index + 1)) {
+    throw std::runtime_error("Couldn't get indexed value");
+  }
+  return object[index];
+}
+
+rapidjson::Value& get_object_from_object(rapidjson::Value& object, const char* name)
+{
+  rapidjson::Value& value = get_value_from_object(object, name);
+  if (!value.IsObject()) {
+    throw std::runtime_error(std::string("Member ") + name + " isn't a object");
+  }
+  return value;
+}
+
 std::string get_string_from_object(rapidjson::Value& object, const char* name)
 {
-  if (!object.HasMember(name) || !object[name].IsString()) {
-    throw std::runtime_error(std::string("Couldn't get string member ") + name);
+  rapidjson::Value& value = get_value_from_object(object, name);
+  if (!value.IsString()) {
+    throw std::runtime_error(std::string("Member ") + name + " isn't a string");
   }
-  return object[name].GetString();
+  return value.GetString();
+}
+
+std::string get_string_from_array(rapidjson::Value& object, unsigned index)
+{
+  rapidjson::Value& value = get_value_from_array(object, index);
+  if (!value.IsString()) {
+    throw std::runtime_error("Value from array isn't a string");
+  }
+  return value.GetString();
+}
+
+int32_t get_int32_from_object(rapidjson::Value& object, const char* name)
+{
+  rapidjson::Value& value = get_value_from_object(object, name);
+  if (!value.IsInt()) {
+    throw std::runtime_error(std::string("Member \"") + name + "\" isn't a integer");
+  }
+  return value.GetInt();
 }
 
 bool is_tasmota_config(const std::string& topic)
@@ -79,6 +124,7 @@ tasmota::Config get_tasmota_config(const std::string& json)
   config.dn() = get_string_from_object(document, "dn");
   config.ft() = get_string_from_object(document, "ft");
   config.t() = get_string_from_object(document, "t");
+  config.fn() = get_string_from_array(get_value_from_object(document, "fn"), 0);
   return config;
 }
 
@@ -96,10 +142,11 @@ using Configs = std::map<std::string, tasmota::Config>;
 static const std::set<std::string> on_values{"on", "1", "true"};
 static const std::set<std::string> off_values{"off", "0", "false"};
 
-tasmota::Power get_tasmota_power(const std::string& device, const std::string& message)
+tasmota::Power get_tasmota_power(const tasmota::Config& config, const std::string& message)
 {
   tasmota::Power power;
-  power.device() = device;
+  power.device_name() = config.t();
+  power.display_name() = config.fn();
   const std::string lc = to_lower(message);
   if (on_values.count(lc)) {
     power.on() = true;

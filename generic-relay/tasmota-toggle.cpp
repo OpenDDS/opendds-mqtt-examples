@@ -12,12 +12,11 @@ int main(int argc, char* argv[])
     OpenddsWrapper opendds_wrapper(argc, argv);
 
     // Setup OpenDDS
-    auto typesupport = opendds_wrapper.register_typesupport<MqttMessage>();
-    auto type_name = typesupport->get_type_name();
-    auto to_mqtt_topic = opendds_wrapper.create_topic("To MQTT", type_name);
-    auto from_mqtt_topic = opendds_wrapper.create_topic("From MQTT", type_name);
-    auto writer = opendds_wrapper.create_datawriter<MqttMessage>(to_mqtt_topic);
-    auto reader = opendds_wrapper.create_datareader<MqttMessage>(from_mqtt_topic);
+    auto mqtt_message_ts = opendds_wrapper.register_typesupport<MqttMessage>();
+    auto to_mqtt_topic = mqtt_message_ts.create_topic(to_mqtt_topic_name);
+    auto from_mqtt_topic = mqtt_message_ts.create_topic(from_mqtt_topic_name);
+    auto writer = to_mqtt_topic.create_datawriter();
+    auto reader = from_mqtt_topic.create_datareader();
     DDS::ReadCondition_var read_condition = reader->create_readcondition(
       DDS::ANY_SAMPLE_STATE, DDS::ANY_VIEW_STATE, DDS::ANY_INSTANCE_STATE);
     DDS::WaitSet_var wait_set = new DDS::WaitSet;
@@ -48,15 +47,15 @@ int main(int argc, char* argv[])
           auto it = stat_power_topic_to_configs.find(topic);
           if (it != stat_power_topic_to_configs.end()) {
             const auto& config = it->second;
-            const std::string& device = config.t();
-            if (!changed.count(device)) {
-              tasmota::Power power = get_tasmota_power(device, message);
+            const std::string& device_name = config.t();
+            if (!changed.count(device_name)) {
+              tasmota::Power power = get_tasmota_power(config, message);
               const std::string to = toggle_tasmota_power(power);
-              std::cout << "Toggling " << power.device() << " from "
+              std::cout << "Toggling " << power.display_name() << " from "
                 << power.on() << " to " << to << std::endl;
               check_rc(writer->write(
                 {get_tasmota_topic(config, "cmnd", "Power"), to}, DDS::HANDLE_NIL), "write");
-              changed.insert(device);
+              changed.insert(device_name);
             }
           }
         }

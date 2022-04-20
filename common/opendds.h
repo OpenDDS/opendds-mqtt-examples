@@ -22,12 +22,80 @@ void check_rc(DDS::ReturnCode_t rc, const std::string& message)
 
 template<typename TopicType>
 struct Traits {
+  typedef typename OpenDDS::DCPS::DDSTraits<TopicType>::TypeSupportType TypeSupport;
+  typedef typename TypeSupport::_var_type TypeSupportVar;
   typedef typename OpenDDS::DCPS::DDSTraits<TopicType>::TypeSupportImplType TypeSupportImpl;
   typedef typename TypeSupportImpl::_var_type TypeSupportImplVar;
   typedef typename OpenDDS::DCPS::DDSTraits<TopicType>::DataWriterType DataWriter;
   typedef TAO_Objref_Var_T<DataWriter> DataWriterVar;
   typedef typename OpenDDS::DCPS::DDSTraits<TopicType>::DataReaderType DataReader;
   typedef TAO_Objref_Var_T<DataReader> DataReaderVar;
+};
+
+template<typename TopicType>
+struct TopicWrapper {
+  DDS::DomainParticipant_var participant_;
+  DDS::Publisher_var publisher_;
+  DDS::Subscriber_var subscriber_;
+  DDS::Topic_var topic_;
+
+  TopicWrapper(DDS::DomainParticipant_var participant,
+    DDS::Publisher_var publisher, DDS::Subscriber_var subscriber,
+    CORBA::String_var type_name, const std::string& topic_name)
+  : participant_(participant)
+  , publisher_(publisher)
+  , subscriber_(subscriber)
+  , topic_(participant->create_topic(topic_name.c_str(), type_name,
+    TOPIC_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK))
+  {
+    if (!topic_) {
+      throw std::runtime_error(std::string("Failed to create DDS topic ") + topic_name + "!");
+    }
+  }
+
+  typename Traits<TopicType>::DataWriterVar create_datawriter()
+  {
+    typename Traits<TopicType>::DataWriterVar datawriter = Traits<TopicType>::DataWriter::_narrow(
+      publisher_->create_datawriter(
+        topic_, DATAWRITER_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK));
+    if (!datawriter) throw std::runtime_error(std::string("Failed to create DDS DataWriter!"));
+    return datawriter;
+  }
+
+  typename Traits<TopicType>::DataReaderVar create_datareader(
+    DDS::DataReaderListener_var listener = nullptr)
+  {
+    typename Traits<TopicType>::DataReaderVar datareader = Traits<TopicType>::DataReader::_narrow(
+      subscriber_->create_datareader(
+        topic_, DATAREADER_QOS_DEFAULT, listener, OpenDDS::DCPS::DEFAULT_STATUS_MASK));
+    if (!datareader) throw std::runtime_error(std::string("Failed to create DDS DataReader!"));
+    return datareader;
+  }
+};
+
+template<typename TopicType>
+struct TypeSupportWrapper {
+  DDS::DomainParticipant_var participant_;
+  DDS::Publisher_var publisher_;
+  DDS::Subscriber_var subscriber_;
+  typename Traits<TopicType>::TypeSupportVar typesupport_;
+  CORBA::String_var type_name_;
+
+  TypeSupportWrapper(DDS::DomainParticipant_var participant,
+    DDS::Publisher_var publisher, DDS::Subscriber_var subscriber)
+  : participant_(participant)
+  , publisher_(publisher)
+  , subscriber_(subscriber)
+  , typesupport_(new typename Traits<TopicType>::TypeSupportImpl)
+  {
+    check_rc(typesupport_->register_type(participant_, ""), "registering typesupport failed");
+    type_name_ = typesupport_->get_type_name();
+  }
+
+  TopicWrapper<TopicType> create_topic(const std::string& name)
+  {
+    return TopicWrapper<TopicType>(participant_, publisher_, subscriber_, type_name_, name);
+  }
 };
 
 struct OpenddsWrapper {
@@ -88,41 +156,9 @@ struct OpenddsWrapper {
   }
 
   template<typename TopicType>
-  typename Traits<TopicType>::TypeSupportImplVar register_typesupport()
+  TypeSupportWrapper<TopicType> register_typesupport()
   {
-    typename Traits<TopicType>::TypeSupportImplVar ts_var =
-      new typename Traits<TopicType>::TypeSupportImpl;
-    check_rc(ts_var->register_type(participant_, ""), "registering typesupport failed");
-    return ts_var;
-  }
-
-  DDS::Topic_var create_topic(const char* name, const char* type_name)
-  {
-    DDS::Topic_var topic = participant_->create_topic(
-      name, type_name, TOPIC_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
-    if (!topic) throw std::runtime_error(std::string("Failed to create DDS topic ") + name + "!");
-    return topic;
-  }
-
-  template<typename TopicType>
-  typename Traits<TopicType>::DataWriterVar create_datawriter(DDS::Topic_var topic)
-  {
-    typename Traits<TopicType>::DataWriterVar datawriter = Traits<TopicType>::DataWriter::_narrow(
-      publisher_->create_datawriter(
-        topic, DATAWRITER_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK));
-    if (!datawriter) throw std::runtime_error(std::string("Failed to create DDS DataWriter!"));
-    return datawriter;
-  }
-
-  template<typename TopicType>
-  typename Traits<TopicType>::DataReaderVar create_datareader(
-    DDS::Topic_var topic, DDS::DataReaderListener_var listener = nullptr)
-  {
-    typename Traits<TopicType>::DataReaderVar datareader = Traits<TopicType>::DataReader::_narrow(
-      subscriber_->create_datareader(
-        topic, DATAREADER_QOS_DEFAULT, listener, OpenDDS::DCPS::DEFAULT_STATUS_MASK));
-    if (!datareader) throw std::runtime_error(std::string("Failed to create DDS DataReader!"));
-    return datareader;
+    return TypeSupportWrapper<TopicType>(participant_, publisher_, subscriber_);
   }
 };
 

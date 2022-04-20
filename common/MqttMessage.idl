@@ -1,3 +1,6 @@
+const string from_mqtt_topic_name = "From MQTT";
+const string to_mqtt_topic_name = "To MQTT";
+
 @topic
 struct MqttMessage {
   @key string topic;
