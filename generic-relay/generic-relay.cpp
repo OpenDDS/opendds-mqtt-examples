@@ -1,6 +1,6 @@
 #include <opendds.h>
 #include <NopDataReaderListener.h>
-
+#include <ArgParser.h>
 #include <MqttMessageTypeSupportImpl.h>
 
 #include <mqtt/client.h>
@@ -36,22 +36,14 @@ public:
   }
 };
 
-void usage(std::ostream& os)
-{
-  os << "generic-relay [OPENDDS_ARGUMENTS] BROKER" << std::endl;
-}
-
 int main(int argc, char* argv[])
 {
   try {
     OpenddsWrapper opendds_wrapper(argc, argv);
 
-    if (argc < 2) {
-      std::cerr << "ERROR: At least one argument is required" << std::endl;
-      usage(std::cerr);
-      throw 1;
-    }
-    const std::string broker = argv[1];
+    ArgParser arg_parser(argc, argv, "generic-relay", "[OPENDDS_OPTIONS] MQTT_BROKER");
+    const std::string broker = arg_parser.get_next_pos_arg("MQTT_BROKER");
+    arg_parser.done();
 
     // Setup MQTT
     mqtt::client mqtt_client(broker, "opendds-mqtt-generic-relay");

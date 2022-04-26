@@ -1,24 +1,11 @@
 #include <tasmota.h>
 #include <opendds.h>
+#include <ArgParser.h>
 #include <NopDataReaderListener.h>
 
 #include <mqtt/client.h>
 
 #include <iostream>
-
-void usage(std::ostream& out)
-{
-  out
-    << "Usage:" << std::endl
-    << "  idl-relay BROKER" << std::endl
-    << "  idl-relay -h" << std::endl;
-}
-
-void help()
-{
-  usage(std::cout);
-  std::exit(0);
-}
 
 class PowerDataReaderListener : public NopDataReaderListener {
 public:
@@ -62,12 +49,9 @@ int main(int argc, char* argv[])
   try {
     OpenddsWrapper opendds_wrapper(argc, argv);
 
-    if (argc < 2) {
-      std::cerr << "ERROR: At least one argument is required" << std::endl;
-      usage(std::cerr);
-      throw 1;
-    }
-    const std::string broker = argv[1];
+    ArgParser arg_parser(argc, argv, "generic-relay", "[OPENDDS_OPTIONS] MQTT_BROKER");
+    const std::string broker = arg_parser.get_next_pos_arg("MQTT_BROKER");
+    arg_parser.done();
 
     // Setup MQTT
     mqtt::client mqtt_client(broker, "idl-relay");

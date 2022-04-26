@@ -1,5 +1,6 @@
 #include <opendds.h>
 #include <tasmota.h>
+#include <ArgParser.h>
 #include <MqttMessageTypeSupportImpl.h>
 
 #include <dds/DCPS/WaitSet.h>
@@ -10,6 +11,9 @@ int main(int argc, char* argv[])
 {
   try {
     OpenddsWrapper opendds_wrapper(argc, argv);
+
+    ArgParser arg_parser(argc, argv, "tasmota-toggle", "[OPENDDS_OPTIONS]");
+    arg_parser.done();
 
     // Setup OpenDDS
     auto mqtt_message_ts = opendds_wrapper.register_typesupport<MqttMessage>();

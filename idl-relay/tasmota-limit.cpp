@@ -1,5 +1,6 @@
 #include <opendds.h>
 #include <tasmota.h>
+#include <ArgParser.h>
 
 #include <dds/DCPS/WaitSet.h>
 
@@ -12,7 +13,10 @@ int main(int argc, char* argv[])
 {
   try {
     OpenddsWrapper opendds_wrapper(argc, argv);
-    const int32_t total_watts_limit = std::stoi(argv[1]);
+
+    ArgParser arg_parser(argc, argv, "tasmota-limit", "[OPENDDS_OPTIONS] WATTAGE_LIMIT");
+    const int32_t total_watts_limit = arg_parser.get_next_pos_arg_as_int("WATTAGE_LIMIT");
+    arg_parser.done();
 
     // Setup OpenDDS
     auto wattage_ts = opendds_wrapper.register_typesupport<tasmota::Wattage>();
