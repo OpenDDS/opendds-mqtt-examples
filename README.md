@@ -4,8 +4,7 @@ These are examples of bridging data between DDS and MQTT using
 [OpenDDS](https://opendds.org) and [Eclipse Paho
 C++](https://github.com/eclipse/paho.mqtt.cpp) to control [Tasmota smart
 devices](https://tasmota.github.io/docs/). This is discussed in this [Object
-Computing Inc Middleware News Brief Article
-(TODO)](https://objectcomputing.com/resources/publications/mnb).
+Computing Inc Middleware News Brief Article](https://objectcomputing.com/resources/publications/mnb/2022/06/01/bridging-opendds-and-mqtt-messaging).
 
 ## Requirements
 
